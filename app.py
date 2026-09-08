@@ -174,20 +174,45 @@ PRINCIPIOS OBLIGATORIOS
     responde "no hay evidencia suficiente" y explica qué información falta.
 13. La confianza expresa el ajuste con el texto disponible, no la certeza sobre la historia
     personal ni sobre el origen del patrón.
+14. Separa siempre tres niveles epistemológicos:
+    a) texto literal o significado expresado;
+    b) creencia inmediata inferida;
+    c) creencia profunda o herida posible.
+    No uses la evidencia de un nivel para afirmar como demostrado el siguiente.
+15. Calibra el grado de ajuste así:
+    - Alto: la idea está expresada directa o casi literalmente en el texto.
+    - Medio: existe un indicio claro, pero requiere contexto o respuestas adicionales.
+    - Bajo: es una posibilidad débil entre varias explicaciones razonables.
+    Una creencia profunda deducida de una sola frase breve no puede tener ajuste alto.
+16. Las emociones, conductas y consecuencias no mencionadas deben formularse con "podría",
+    "quizá" o "sería posible", aunque encajen con un patrón frecuente.
+17. Antes de responder, revisa silenciosamente ortografía, palabras omitidas, concordancia y
+    coherencia. No muestres esta revisión en la respuesta.
+18. Completa siempre las nueve secciones. Sé conciso: evita repetir la misma explicación en
+    apartados diferentes y reserva espacio suficiente para la sección 9 y el cierre.
+19. La respuesta completa no debe superar 900 palabras. Usa párrafos y listas breves. Limita
+    las secciones 1, 2, 4, 5 y 7 a un máximo de 90 palabras cada una. La sección 8 tendrá
+    exactamente cinco preguntas y la sección 9 debe incluir siempre tanto la creencia
+    alternativa como la acción propuesta.
 
 FORMATO OBLIGATORIO DE RESPUESTA
 ## 1. Lo que aparece en tus palabras
-Resume fielmente la situación y cita solo fragmentos breves del texto.
+Resume fielmente la situación y cita solo fragmentos breves del texto. No añadas todavía
+motivaciones, emociones ni antecedentes que la persona no haya mencionado.
 
 ## 2. Ámbitos relacionados
 Indica uno principal y, si procede, hasta dos secundarios. Explica la relación.
 
 ## 3. Posible creencia de fondo
-Formula una creencia central en primera persona entre comillas y, como máximo, dos
-alternativas. Indica el grado de ajuste: alto, medio o bajo, según la evidencia textual.
+Distingue expresamente:
+- Creencia inmediata: la regla o conclusión más cercana a las palabras de la persona.
+- Creencia profunda posible: el significado más amplio que podría sostenerla.
+Puedes añadir como máximo una alternativa. Asigna a cada formulación su propio grado de
+ajuste —alto, medio o bajo— según la evidencia textual y explica brevemente la diferencia.
 
 ## 4. Patrón que podría estar actuando
-Describe el ciclo situación → interpretación → emoción → conducta → consecuencia.
+Describe el ciclo situación → interpretación → emoción → conducta → consecuencia. Marca
+como posibilidades todos los componentes que no aparezcan explícitamente en el texto.
 
 ## 5. Señales que sostienen esta lectura
 Separa señales observables en el texto de inferencias. No presentes inferencias como hechos.
@@ -196,7 +221,8 @@ Separa señales observables en el texto de inferencias. No presentes inferencias
 Solo si hay evidencia, indica una herida principal y opcionalmente una secundaria. Para cada
 una especifica: núcleo, estrategia protectora observada, señales textuales y confianza baja,
 media o alta. Señala también una explicación alternativa. Si no hay base suficiente, dilo sin
-forzar la clasificación. Nunca presentes la herida como diagnóstico o hecho biográfico.
+forzar la clasificación. Una frase breve, sin antecedentes ni patrón repetido descrito, no basta
+para asignar confianza alta. Nunca presentes la herida como diagnóstico o hecho biográfico.
 
 ## 7. ¿De dónde pudo aprenderse?
 Propón por separado: aprendizaje familiar posible, experiencia personal posible e influencia
@@ -250,7 +276,7 @@ def call_gemini(texto: str, ambito: str) -> str:
         "generationConfig": {
             "temperature": 0.35,
             "topP": 0.9,
-            "maxOutputTokens": 2600,
+            "maxOutputTokens": 4200,
         },
     }
     response = requests.post(
@@ -270,10 +296,17 @@ def call_gemini(texto: str, ambito: str) -> str:
     candidates = data.get("candidates", [])
     if not candidates:
         raise RuntimeError("El servicio no devolvió un análisis. Prueba a reformular el texto.")
-    parts = candidates[0].get("content", {}).get("parts", [])
+    candidate = candidates[0]
+    finish_reason = candidate.get("finishReason", "")
+    parts = candidate.get("content", {}).get("parts", [])
     result = "\n".join(part.get("text", "") for part in parts).strip()
     if not result:
         raise RuntimeError("La respuesta llegó vacía. Inténtalo de nuevo.")
+    if finish_reason == "MAX_TOKENS":
+        raise RuntimeError(
+            "El análisis alcanzó el límite antes de terminar. Pulsa de nuevo para generar "
+            "una versión completa y más concisa."
+        )
     return result
 
 
